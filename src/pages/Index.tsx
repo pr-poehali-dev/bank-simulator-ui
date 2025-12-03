@@ -1,26 +1,99 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
 
 type Tab = 'home' | 'savings' | 'transfers' | 'settings';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [balance, setBalance] = useState(125850.50);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isNewGoalModalOpen, setIsNewGoalModalOpen] = useState(false);
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferRecipient, setTransferRecipient] = useState('');
+  const [depositAmount, setDepositAmount] = useState('');
+  const [newGoalName, setNewGoalName] = useState('');
+  const [newGoalAmount, setNewGoalAmount] = useState('');
+  const { toast } = useToast();
 
-  const balance = 125850.50;
-  const savings = [
-    { name: 'Отпуск 2026', current: 85000, goal: 150000, color: 'bg-primary' },
-    { name: 'Новый гаджет', current: 42000, goal: 80000, color: 'bg-secondary' }
-  ];
+  const [savings, setSavings] = useState([
+    { name: 'Отпуск 2026', current: 85000, goal: 150000 },
+    { name: 'Новый гаджет', current: 42000, goal: 80000 }
+  ]);
 
-  const transactions = [
+  const [transactions, setTransactions] = useState([
     { id: 1, name: 'Продуктовый', amount: -3500, date: '03 дек', icon: 'ShoppingCart' },
     { id: 2, name: 'Зарплата', amount: 85000, date: '01 дек', icon: 'TrendingUp' },
     { id: 3, name: 'Кафе', amount: -1200, date: '02 дек', icon: 'Coffee' }
-  ];
+  ]);
+
+  const handleTransfer = () => {
+    const amount = parseFloat(transferAmount);
+    if (amount && amount > 0 && amount <= balance && transferRecipient) {
+      setBalance(prev => prev - amount);
+      setTransactions(prev => [
+        { id: Date.now(), name: transferRecipient, amount: -amount, date: 'Сегодня', icon: 'Send' },
+        ...prev
+      ]);
+      toast({
+        title: "Перевод выполнен!",
+        description: `${amount.toLocaleString('ru-RU')} ₽ отправлено ${transferRecipient}`,
+      });
+      setIsTransferModalOpen(false);
+      setTransferAmount('');
+      setTransferRecipient('');
+    } else {
+      toast({
+        title: "Ошибка",
+        description: "Проверьте сумму и получателя",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeposit = () => {
+    const amount = parseFloat(depositAmount);
+    if (amount && amount > 0) {
+      setBalance(prev => prev + amount);
+      setTransactions(prev => [
+        { id: Date.now(), name: 'Пополнение счёта', amount: amount, date: 'Сегодня', icon: 'Plus' },
+        ...prev
+      ]);
+      toast({
+        title: "Счёт пополнен!",
+        description: `+${amount.toLocaleString('ru-RU')} ₽`,
+      });
+      setIsDepositModalOpen(false);
+      setDepositAmount('');
+    }
+  };
+
+  const handleNewGoal = () => {
+    const amount = parseFloat(newGoalAmount);
+    if (newGoalName && amount && amount > 0) {
+      setSavings(prev => [...prev, { name: newGoalName, current: 0, goal: amount }]);
+      toast({
+        title: "Цель создана!",
+        description: `Начните копить на ${newGoalName}`,
+      });
+      setIsNewGoalModalOpen(false);
+      setNewGoalName('');
+      setNewGoalAmount('');
+    }
+  };
+
+  const handleQuickTransfer = (contactName: string) => {
+    setTransferRecipient(contactName);
+    setIsTransferModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
@@ -32,9 +105,8 @@ const Index = () => {
                 <h1 className="text-3xl font-bold">CyberBank</h1>
                 <p className="text-muted-foreground">Банк будущего</p>
               </div>
-              <Avatar className="h-14 w-14 border-2 border-primary cyber-glow">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=cyber" />
-                <AvatarFallback>АС</AvatarFallback>
+              <Avatar className="h-14 w-14 border-2 border-primary cyber-glow bg-primary/20">
+                <AvatarFallback className="text-primary text-xl font-bold">АС</AvatarFallback>
               </Avatar>
             </div>
 
@@ -45,11 +117,18 @@ const Index = () => {
                   {balance.toLocaleString('ru-RU')} ₽
                 </p>
                 <div className="flex gap-2 mt-4">
-                  <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 cyber-glow">
+                  <Button 
+                    onClick={() => setIsTransferModalOpen(true)}
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 cyber-glow"
+                  >
                     <Icon name="ArrowUp" size={18} className="mr-2" />
                     Перевести
                   </Button>
-                  <Button variant="outline" className="flex-1 border-primary/50">
+                  <Button 
+                    onClick={() => setIsDepositModalOpen(true)}
+                    variant="outline" 
+                    className="flex-1 border-primary/50"
+                  >
                     <Icon name="Plus" size={18} className="mr-2" />
                     Пополнить
                   </Button>
@@ -87,7 +166,11 @@ const Index = () => {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Накопления</h1>
-              <Button size="icon" className="rounded-full bg-primary cyber-glow">
+              <Button 
+                onClick={() => setIsNewGoalModalOpen(true)}
+                size="icon" 
+                className="rounded-full bg-primary cyber-glow"
+              >
                 <Icon name="Plus" size={24} />
               </Button>
             </div>
@@ -112,7 +195,10 @@ const Index = () => {
               ))}
             </div>
 
-            <Card className="glass-effect p-6 border-secondary/30 cyber-glow-purple animate-slide-left">
+            <Card 
+              onClick={() => setIsNewGoalModalOpen(true)}
+              className="glass-effect p-6 border-secondary/30 cyber-glow-purple animate-slide-left cursor-pointer hover:border-secondary transition-all"
+            >
               <div className="text-center space-y-2">
                 <Icon name="Target" size={48} className="mx-auto text-secondary" />
                 <h3 className="text-lg font-semibold">Создать новую цель</h3>
@@ -129,7 +215,10 @@ const Index = () => {
             <h1 className="text-3xl font-bold">Переводы</h1>
 
             <div className="grid grid-cols-2 gap-4 animate-slide-right">
-              <Card className="glass-effect p-6 border-primary/30 hover:border-primary transition-all cursor-pointer">
+              <Card 
+                onClick={() => setIsTransferModalOpen(true)}
+                className="glass-effect p-6 border-primary/30 hover:border-primary transition-all cursor-pointer"
+              >
                 <div className="text-center space-y-2">
                   <div className="w-12 h-12 mx-auto rounded-full bg-primary/20 flex items-center justify-center cyber-glow">
                     <Icon name="User" size={24} className="text-primary" />
@@ -138,7 +227,10 @@ const Index = () => {
                 </div>
               </Card>
 
-              <Card className="glass-effect p-6 border-secondary/30 hover:border-secondary transition-all cursor-pointer">
+              <Card 
+                onClick={() => setIsTransferModalOpen(true)}
+                className="glass-effect p-6 border-secondary/30 hover:border-secondary transition-all cursor-pointer"
+              >
                 <div className="text-center space-y-2">
                   <div className="w-12 h-12 mx-auto rounded-full bg-secondary/20 flex items-center justify-center cyber-glow-purple">
                     <Icon name="CreditCard" size={24} className="text-secondary" />
@@ -147,7 +239,10 @@ const Index = () => {
                 </div>
               </Card>
 
-              <Card className="glass-effect p-6 border-primary/30 hover:border-primary transition-all cursor-pointer">
+              <Card 
+                onClick={() => toast({ title: "QR-сканер", description: "Функция в разработке" })}
+                className="glass-effect p-6 border-primary/30 hover:border-primary transition-all cursor-pointer"
+              >
                 <div className="text-center space-y-2">
                   <div className="w-12 h-12 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
                     <Icon name="QrCode" size={24} className="text-primary" />
@@ -156,7 +251,10 @@ const Index = () => {
                 </div>
               </Card>
 
-              <Card className="glass-effect p-6 border-secondary/30 hover:border-secondary transition-all cursor-pointer">
+              <Card 
+                onClick={() => setIsTransferModalOpen(true)}
+                className="glass-effect p-6 border-secondary/30 hover:border-secondary transition-all cursor-pointer"
+              >
                 <div className="text-center space-y-2">
                   <div className="w-12 h-12 mx-auto rounded-full bg-secondary/20 flex items-center justify-center">
                     <Icon name="Building" size={24} className="text-secondary" />
@@ -169,15 +267,18 @@ const Index = () => {
             <div className="space-y-3 animate-slide-left">
               <h2 className="text-xl font-semibold">Частые переводы</h2>
               {[
-                { name: 'Алексей С.', phone: '+7 999 123-45-67', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex' },
-                { name: 'Мария К.', phone: '+7 999 765-43-21', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria' }
+                { name: 'Алексей С.', phone: '+7 999 123-45-67' },
+                { name: 'Мария К.', phone: '+7 999 765-43-21' }
               ].map((contact, idx) => (
-                <Card key={idx} className="glass-effect p-4 border-border/50 hover:border-primary/50 transition-all cursor-pointer">
+                <Card 
+                  key={idx} 
+                  onClick={() => handleQuickTransfer(contact.name)}
+                  className="glass-effect p-4 border-border/50 hover:border-primary/50 transition-all cursor-pointer"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Avatar className="border border-primary/50">
-                        <AvatarImage src={contact.avatar} />
-                        <AvatarFallback>{contact.name[0]}</AvatarFallback>
+                      <Avatar className="border border-primary/50 bg-primary/20">
+                        <AvatarFallback className="text-primary font-bold">{contact.name[0]}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{contact.name}</p>
@@ -200,16 +301,20 @@ const Index = () => {
 
             <Card className="glass-effect p-6 border-primary/30 animate-slide-right">
               <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20 border-2 border-primary cyber-glow">
-                  <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=cyber" />
-                  <AvatarFallback>АС</AvatarFallback>
+                <Avatar className="h-20 w-20 border-2 border-primary cyber-glow bg-primary/20">
+                  <AvatarFallback className="text-primary text-3xl font-bold">АС</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold">Алексей Смирнов</h2>
                   <p className="text-sm text-muted-foreground">+7 999 123-45-67</p>
                   <p className="text-xs text-muted-foreground">alexey@cyberbank.ru</p>
                 </div>
-                <Button variant="outline" size="icon" className="border-primary/50">
+                <Button 
+                  onClick={() => toast({ title: "Редактирование", description: "Функция в разработке" })}
+                  variant="outline" 
+                  size="icon" 
+                  className="border-primary/50"
+                >
                   <Icon name="Edit" size={18} />
                 </Button>
               </div>
@@ -224,7 +329,11 @@ const Index = () => {
                 { icon: 'HelpCircle', label: 'Помощь', color: 'text-primary' },
                 { icon: 'LogOut', label: 'Выход', color: 'text-destructive' }
               ].map((item, idx) => (
-                <Card key={idx} className="glass-effect p-4 border-border/50 hover:border-primary/50 transition-all cursor-pointer">
+                <Card 
+                  key={idx} 
+                  onClick={() => toast({ title: item.label, description: "Функция в разработке" })}
+                  className="glass-effect p-4 border-border/50 hover:border-primary/50 transition-all cursor-pointer"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Icon name={item.icon as any} size={22} className={item.color} />
@@ -238,6 +347,119 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={isTransferModalOpen} onOpenChange={setIsTransferModalOpen}>
+        <DialogContent className="glass-effect border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Перевод средств</DialogTitle>
+            <DialogDescription>Введите сумму и получателя</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="recipient">Получатель</Label>
+              <Input
+                id="recipient"
+                value={transferRecipient}
+                onChange={(e) => setTransferRecipient(e.target.value)}
+                placeholder="Имя или номер телефона"
+                className="glass-effect border-primary/30"
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount">Сумма</Label>
+              <Input
+                id="amount"
+                type="number"
+                value={transferAmount}
+                onChange={(e) => setTransferAmount(e.target.value)}
+                placeholder="0"
+                className="glass-effect border-primary/30"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Доступно: {balance.toLocaleString('ru-RU')} ₽
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTransferModalOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleTransfer} className="bg-primary cyber-glow">
+              Перевести
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDepositModalOpen} onOpenChange={setIsDepositModalOpen}>
+        <DialogContent className="glass-effect border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Пополнение счёта</DialogTitle>
+            <DialogDescription>Введите сумму пополнения</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="deposit">Сумма</Label>
+              <Input
+                id="deposit"
+                type="number"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                placeholder="0"
+                className="glass-effect border-primary/30"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDepositModalOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleDeposit} className="bg-primary cyber-glow">
+              Пополнить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isNewGoalModalOpen} onOpenChange={setIsNewGoalModalOpen}>
+        <DialogContent className="glass-effect border-secondary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Новая цель</DialogTitle>
+            <DialogDescription>Создайте цель для накопления</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="goalName">Название цели</Label>
+              <Input
+                id="goalName"
+                value={newGoalName}
+                onChange={(e) => setNewGoalName(e.target.value)}
+                placeholder="Например: Новая машина"
+                className="glass-effect border-secondary/30"
+              />
+            </div>
+            <div>
+              <Label htmlFor="goalAmount">Целевая сумма</Label>
+              <Input
+                id="goalAmount"
+                type="number"
+                value={newGoalAmount}
+                onChange={(e) => setNewGoalAmount(e.target.value)}
+                placeholder="0"
+                className="glass-effect border-secondary/30"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewGoalModalOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleNewGoal} className="bg-secondary cyber-glow-purple">
+              Создать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="fixed bottom-0 left-0 right-0 glass-effect border-t border-border/50 p-4">
         <div className="flex justify-around items-center max-w-md mx-auto">
