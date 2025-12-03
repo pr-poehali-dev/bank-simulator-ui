@@ -17,11 +17,14 @@ const Index = () => {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isNewGoalModalOpen, setIsNewGoalModalOpen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferRecipient, setTransferRecipient] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalAmount, setNewGoalAmount] = useState('');
+  const [adsEnabled, setAdsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { toast } = useToast();
 
   const [savings, setSavings] = useState([
@@ -95,6 +98,37 @@ const Index = () => {
     setIsTransferModalOpen(true);
   };
 
+  const handleRemoveAds = () => {
+    setAdsEnabled(false);
+    setIsPremiumModalOpen(false);
+    toast({
+      title: "Реклама отключена!",
+      description: "Спасибо за поддержку CyberBank Premium 🚀",
+    });
+  };
+
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+    toast({
+      title: notificationsEnabled ? "Уведомления отключены" : "Уведомления включены",
+      description: notificationsEnabled ? "Вы не будете получать уведомления" : "Вы будете получать уведомления о транзакциях",
+    });
+  };
+
+  const handleSecuritySettings = () => {
+    toast({
+      title: "Безопасность",
+      description: "Биометрическая защита активна 🔒",
+    });
+  };
+
+  const handleCardManagement = () => {
+    toast({
+      title: "Мои карты",
+      description: "CyberCard **** 4567 активна",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
       <div className={`transition-all duration-500 ${activeTab === 'home' ? 'animate-fade-in' : 'hidden'}`}>
@@ -135,6 +169,29 @@ const Index = () => {
                 </div>
               </div>
             </Card>
+
+            {adsEnabled && (
+              <Card className="glass-effect p-4 border-secondary/30 bg-gradient-to-r from-secondary/10 to-primary/10 animate-slide-right">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
+                      <Icon name="Zap" size={20} className="text-secondary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">CyberBank Premium</p>
+                      <p className="text-xs text-muted-foreground">Отключите рекламу навсегда</p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => setIsPremiumModalOpen(true)}
+                    size="sm" 
+                    className="bg-secondary hover:bg-secondary/90 cyber-glow-purple"
+                  >
+                    Купить
+                  </Button>
+                </div>
+              </Card>
+            )}
 
             <div className="space-y-3 animate-slide-left">
               <h2 className="text-xl font-semibold">Последние операции</h2>
@@ -320,18 +377,36 @@ const Index = () => {
               </div>
             </Card>
 
+            {adsEnabled && (
+              <Card 
+                onClick={() => setIsPremiumModalOpen(true)}
+                className="glass-effect p-4 border-destructive/30 bg-gradient-to-r from-destructive/10 to-secondary/10 cursor-pointer hover:border-destructive/50 transition-all animate-slide-right mb-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Icon name="Crown" size={22} className="text-destructive" />
+                    <div>
+                      <p className="font-semibold text-sm">Отключить рекламу</p>
+                      <p className="text-xs text-muted-foreground">Перейти на Premium</p>
+                    </div>
+                  </div>
+                  <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
+                </div>
+              </Card>
+            )}
+
             <div className="space-y-2 animate-slide-left">
               {[
-                { icon: 'Bell', label: 'Уведомления', color: 'text-primary' },
-                { icon: 'Lock', label: 'Безопасность', color: 'text-secondary' },
-                { icon: 'CreditCard', label: 'Мои карты', color: 'text-primary' },
-                { icon: 'FileText', label: 'Документы', color: 'text-secondary' },
-                { icon: 'HelpCircle', label: 'Помощь', color: 'text-primary' },
-                { icon: 'LogOut', label: 'Выход', color: 'text-destructive' }
+                { icon: 'Bell', label: 'Уведомления', color: 'text-primary', action: toggleNotifications, badge: notificationsEnabled },
+                { icon: 'Lock', label: 'Безопасность', color: 'text-secondary', action: handleSecuritySettings },
+                { icon: 'CreditCard', label: 'Мои карты', color: 'text-primary', action: handleCardManagement },
+                { icon: 'FileText', label: 'Документы', color: 'text-secondary', action: () => toast({ title: 'Документы', description: 'Выписки и договоры' }) },
+                { icon: 'HelpCircle', label: 'Помощь', color: 'text-primary', action: () => toast({ title: 'Помощь', description: 'Служба поддержки 24/7: +7 800 555-35-35' }) },
+                { icon: 'LogOut', label: 'Выход', color: 'text-destructive', action: () => toast({ title: 'Выход', description: 'До встречи!' }) }
               ].map((item, idx) => (
                 <Card 
                   key={idx} 
-                  onClick={() => toast({ title: item.label, description: "Функция в разработке" })}
+                  onClick={item.action}
                   className="glass-effect p-4 border-border/50 hover:border-primary/50 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -339,7 +414,14 @@ const Index = () => {
                       <Icon name={item.icon as any} size={22} className={item.color} />
                       <span className="font-medium">{item.label}</span>
                     </div>
-                    <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      {item.badge !== undefined && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${item.badge ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                          {item.badge ? 'ВКЛ' : 'ВЫКЛ'}
+                        </span>
+                      )}
+                      <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -460,6 +542,69 @@ const Index = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
+        <DialogContent className="glass-effect border-secondary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <Icon name="Crown" size={28} className="text-secondary" />
+              CyberBank Premium
+            </DialogTitle>
+            <DialogDescription>Отключите рекламу навсегда</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              {[
+                { icon: 'Zap', text: 'Без рекламы навсегда' },
+                { icon: 'Shield', text: 'Приоритетная поддержка' },
+                { icon: 'TrendingUp', text: 'Расширенная аналитика' },
+                { icon: 'Gift', text: 'Эксклюзивные бонусы' }
+              ].map((feature, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
+                    <Icon name={feature.icon as any} size={16} className="text-secondary" />
+                  </div>
+                  <span className="text-sm">{feature.text}</span>
+                </div>
+              ))}
+            </div>
+            <Card className="glass-effect p-4 border-primary/30 text-center">
+              <p className="text-3xl font-bold text-primary">499 ₽</p>
+              <p className="text-xs text-muted-foreground mt-1">Единоразовая покупка</p>
+            </Card>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPremiumModalOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleRemoveAds} className="bg-secondary cyber-glow-purple">
+              <Icon name="Crown" size={18} className="mr-2" />
+              Купить Premium
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {adsEnabled && (
+        <div className="fixed bottom-20 left-0 right-0 px-4 pointer-events-none">
+          <Card className="glass-effect p-3 border-secondary/30 bg-gradient-to-r from-secondary/20 to-primary/20 max-w-md mx-auto pointer-events-auto animate-slide-right">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Icon name="Sparkles" size={16} className="text-secondary" />
+                <span className="font-medium">Реклама • CyberTrade</span>
+              </div>
+              <Button 
+                onClick={() => setIsPremiumModalOpen(true)}
+                size="sm" 
+                variant="ghost" 
+                className="h-6 text-xs hover:text-primary"
+              >
+                Убрать →
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 glass-effect border-t border-border/50 p-4">
         <div className="flex justify-around items-center max-w-md mx-auto">
